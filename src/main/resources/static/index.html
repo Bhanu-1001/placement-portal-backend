@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Multi-College Placement Portal</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:Arial}
+body{background:#f5f7fb}
+.header{background:#1e3a8a;color:white;padding:15px 30px;display:flex;justify-content:space-between;align-items:center}
+.header h1{font-size:22px}
+.nav a{color:white;margin-left:15px;text-decoration:none;font-weight:bold;cursor:pointer}
+.container{max-width:1100px;margin:20px auto;padding:20px}
+.card{background:white;padding:20px;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,0.1);margin-bottom:20px}
+.card h2{color:#1e3a8a;margin-bottom:15px}
+input,select,textarea{width:100%;padding:10px;margin:8px 0;border:1px solid #ccc;border-radius:6px}
+button{background:#1e3a8a;color:white;padding:10px 20px;border:none;border-radius:6px;cursor:pointer;font-weight:bold}
+button:hover{background:#152c6b}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.job{border-left:4px solid #1e3a8a;padding:15px;background:#f9fafb;margin:10px 0;border-radius:6px}
+.role-badge{padding:4px 10px;border-radius:20px;color:white;font-size:12px}
+.student{background:#10b981}.company{background:#f59e0b}.admin{background:#ef4444}.college{background:#8b5cf6}
+.hidden{display:none}
+</style>
+</head>
+<body>
+<div class="header">
+<h1>🎓 Multi-College Placement Portal</h1>
+<div class="nav">
+<a onclick="showPage('home')">Home</a>
+<a onclick="showPage('register')">Register</a>
+<a onclick="showPage('login')">Login</a>
+<a onclick="showPage('colleges')">Colleges</a>
+<a onclick="showPage('jobs')">Jobs</a>
+<a onclick="showPage('dashboard')">Dashboard</a>
+</div>
+</div>
+<div class="container">
+<div id="home" class="card">
+<h2>Welcome to Student Internship & Placement Portal</h2>
+<p><b>8 Step Flow:</b></p>
+<ol style="margin:15px 0 15px 20px;line-height:1.8">
+<li>Super Admin Login</li>
+<li>College Registration</li>
+<li>Coordinator Assignment</li>
+<li>Student Registration</li>
+<li>Coordinator Verification</li>
+<li>Student Profile & Resume Upload</li>
+<li>Search & Apply</li>
+<li>Application Tracking</li>
+</ol>
+<p>✅ Backend: <b>http://localhost:8081</b> - WORKING</p>
+</div>
+<div id="register" class="card hidden">
+<h2>📝 Register</h2>
+<input id="reg_username" placeholder="Username">
+<input id="reg_email" placeholder="Email">
+<input id="reg_password" type="password" placeholder="Password">
+<select id="reg_role">
+<option value="STUDENT">STUDENT</option>
+<option value="COMPANY">COMPANY</option>
+<option value="COLLEGE">COLLEGE</option>
+<option value="ADMIN">ADMIN</option>
+</select>
+<button onclick="register()">Register</button>
+<p id="reg_msg"></p>
+</div>
+<div id="login" class="card hidden">
+<h2>🔐 Login</h2>
+<input id="log_username" placeholder="Username">
+<input id="log_password" type="password" placeholder="Password">
+<button onclick="login()">Login</button>
+<p id="log_msg"></p>
+<div id="userInfo"></div>
+</div>
+<div id="colleges" class="card hidden">
+<h2>🏫 Colleges</h2>
+<div class="grid">
+<div>
+<input id="college_name" placeholder="College Name">
+<input id="college_code" placeholder="College Code">
+<input id="college_location" placeholder="Location">
+<button onclick="addCollege()">Add College</button>
+</div>
+<div>
+<button onclick="loadColleges()">Refresh Colleges</button>
+<div id="collegeList"></div>
+</div>
+</div>
+</div>
+<div id="jobs" class="card hidden">
+<h2>💼 Jobs</h2>
+<div class="grid">
+<div>
+<input id="job_title" placeholder="Job Title">
+<input id="job_company" placeholder="Company Name">
+<textarea id="job_desc" placeholder="Description"></textarea>
+<input id="job_location" placeholder="Location">
+<button onclick="addJob()">Post Job</button>
+</div>
+<div>
+<button onclick="loadJobs()">Refresh Jobs</button>
+<div id="jobList"></div>
+</div>
+</div>
+</div>
+<div id="dashboard" class="card hidden">
+<h2>📊 Dashboard</h2>
+<div id="dashContent">Login first</div>
+<button onclick="loadUsers()">Load All Users</button>
+<button onclick="loadApplications()">Load Applications</button>
+<div id="allUsers"></div>
+<div id="allApps"></div>
+</div>
+</div>
+<script>
+const API = "http://localhost:8081/api";
+let currentUser = null;
+function showPage(id){
+ document.querySelectorAll('.container > div').forEach(d=>d.classList.add('hidden'));
+ document.getElementById(id).classList.remove('hidden');
+ if(id==='colleges') loadColleges();
+ if(id==='jobs') loadJobs();
+}
+async function register(){
+ const data = {username: document.getElementById('reg_username').value,email: document.getElementById('reg_email').value,password: document.getElementById('reg_password').value,role: document.getElementById('reg_role').value};
+ const res = await fetch(API+'/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
+ const json = await res.json(); document.getElementById('reg_msg').innerText = json.message; alert(json.message);
+}
+async function login(){
+ const data = {username: document.getElementById('log_username').value,password: document.getElementById('log_password').value};
+ const res = await fetch(API+'/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
+ const json = await res.json();
+ if(json.success){ currentUser = json.user; document.getElementById('log_msg').innerText = "Login Success! Role: " + currentUser.role; document.getElementById('userInfo').innerHTML = `<br><div class="job"><b>Welcome ${currentUser.username}</b><br>Role: ${currentUser.role}</div>`;} else { document.getElementById('log_msg').innerText = json.message; }
+}
+async function addCollege(){
+ const data = {name: document.getElementById('college_name').value,code: document.getElementById('college_code').value,location: document.getElementById('college_location').value};
+ await fetch(API+'/colleges',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)}); loadColleges();
+}
+async function loadColleges(){
+ const res = await fetch(API+'/colleges'); const colleges = await res.json();
+ document.getElementById('collegeList').innerHTML = colleges.map(c=>`<div class="job"><b>${c.name||c.collegeName}</b><br>Code: ${c.code||''}<br>Location: ${c.location||''}</div>`).join('') || "No colleges yet";
+}
+async function addJob(){
+ const data = {title: document.getElementById('job_title').value,companyName: document.getElementById('job_company').value,description: document.getElementById('job_desc').value,location: document.getElementById('job_location').value};
+ await fetch(API+'/jobs',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)}); loadJobs();
+}
+async function loadJobs(){
+ const res = await fetch(API+'/jobs'); const jobs = await res.json();
+ document.getElementById('jobList').innerHTML = jobs.map(j=>`<div class="job"><b>${j.title||j.jobTitle}</b> at ${j.companyName||''}<br>${j.description||''}<br>📍 ${j.location||''}<br><button onclick="applyJob(${j.id})">Apply Now</button></div>`).join('') || "No jobs yet";
+}
+async function applyJob(jobId){
+ if(!currentUser){alert("Login as STUDENT first!"); return;}
+ const data = {jobId: jobId, studentId: currentUser.id, status: "APPLIED"};
+ await fetch(API+'/applications',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)}); alert("Applied successfully!");
+}
+async function loadUsers(){
+ const res = await fetch(API+'/auth/users'); const users = await res.json();
+ document.getElementById('allUsers').innerHTML = "<h3>All Users</h3>" + users.map(u=>`<div class="job">${u.username} - ${u.email} - ${u.role}</div>`).join('');
+}
+async function loadApplications(){
+ const res = await fetch(API+'/applications'); 
+ const apps = await res.json();
+ let html = "<h3>All Applications - Company can Select/Reject</h3>";
+ for(let a of apps){
+  html += `<div class="job">
+   Job: ${a.jobId} | Student: ${a.studentId} | Status: <b style="color:${a.status=='SELECTED'?'green':a.status=='REJECTED'?'red':'blue'}">${a.status}</b><br>
+   <button onclick="updateStatus(${a.id},'SELECTED')" style="background:green">✅ Select</button>
+   <button onclick="updateStatus(${a.id},'REJECTED')" style="background:red">❌ Reject</button>
+  </div>`;
+ }
+ document.getElementById('allApps').innerHTML = html;
+ 
+ // Also show My Applications if Student
+ if(currentUser && currentUser.role=='STUDENT'){
+  const myApps = apps.filter(a=>a.studentId==currentUser.id);
+  html = "<h3>📩 My Applications Status</h3>";
+  html += myApps.map(a=>`<div class="job">Job ID: ${a.jobId} - Status: <b style="color:${a.status=='SELECTED'?'green':a.status=='REJECTED'?'red':'blue'}">${a.status}</b> ${a.status=='SELECTED'?'🎉 CONGRATULATIONS! You are SELECTED!':a.status=='REJECTED'?'😔 Sorry, Not Selected':''}</div>`).join('') || "You have not applied yet";
+  document.getElementById('dashContent').innerHTML = html;
+ }
+}
+async function updateStatus(id,status){
+ await fetch(API+'/applications/'+id+'/status',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:status})});
+ alert("Status Updated to: " + status);
+ loadApplications();
+}
+</script>
+</body>
+</html>
